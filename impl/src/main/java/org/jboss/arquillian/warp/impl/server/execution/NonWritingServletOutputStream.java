@@ -23,7 +23,7 @@ import javax.servlet.ServletOutputStream;
 
 /**
  * The implementation {@link ServletOutputStream} which caches all the written input and writes only when
- * {@link #finallyWriteAndClose(ServletOutputStream)} method is called.
+ * {@link #finallyWrite(ServletOutputStream)} method is called.
  *
  * @author Lukas Fryc
  *
@@ -42,11 +42,14 @@ public class NonWritingServletOutputStream extends ServletOutputStream {
         wasClosed = true;
     }
 
-    public void finallyWriteAndClose(ServletOutputStream delegate) throws IOException {
+    public void finallyWrite(ServletOutputStream delegate) throws IOException {
         byte[] byteArray = baos.toByteArray();
 
         delegate.write(byteArray);
 
+    }
+
+    public void finallyClose(ServletOutputStream delegate) throws IOException {
         if (wasClosed) {
             delegate.close();
         }

@@ -128,16 +128,26 @@ public class NonWritingResponse extends HttpServletResponseWrapper {
         return writer;
     }
 
-    public void finallyWriteAndClose(ServletOutputStream delegateStream) throws IOException {
+    public void finallyWrite(ServletOutputStream delegateStream) throws IOException {
         if (contentLength != null) {
             super.setContentLength(contentLength);
         }
 
         if (writer != null) {
-            writer.finallyWriteAndClose(delegateStream);
+            writer.finallyWrite(delegateStream);
         }
         if (stream != null) {
-            stream.finallyWriteAndClose(delegateStream);
+            stream.finallyWrite(delegateStream);
+        }
+    }
+
+    public void finallyClose(ServletOutputStream delegateStream) throws IOException {
+
+        if (writer != null) {
+            writer.finallyClose(delegateStream);
+        }
+        if (stream != null) {
+            stream.finallyClose(delegateStream);
         }
     }
 }

@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.http.HttpStatus;
 import org.jboss.arquillian.warp.impl.server.execution.NonWritingResponse;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class TestNonWritingResponse {
     public void test_writing_to_printWriter() throws IOException {
         // when
         nonWritingResponse.getWriter().write("test");
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
 
         // then
         assertEquals("test", output.toString());
@@ -60,7 +61,8 @@ public class TestNonWritingResponse {
     @Test
     public void test_not_closing() throws IOException {
         // when
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
+        nonWritingResponse.finallyClose(output);
 
         // then
         assertFalse(output.isClosed());
@@ -70,7 +72,8 @@ public class TestNonWritingResponse {
     public void test_closing_printWriter() throws IOException {
         // when
         nonWritingResponse.getWriter().close();
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
+        nonWritingResponse.finallyClose(output);
 
         // then
         assertTrue(output.isClosed());
@@ -80,7 +83,7 @@ public class TestNonWritingResponse {
     public void test_writing_to_outputStream() throws IOException {
         // when
         nonWritingResponse.getOutputStream().write(bytes("test"));
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
 
         // then
         assertEquals("test", output.toString());
@@ -90,7 +93,8 @@ public class TestNonWritingResponse {
     public void test_closing_outputStream() throws IOException {
         // when
         nonWritingResponse.getOutputStream().close();
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
+        nonWritingResponse.finallyClose(output);
 
         // then
         assertTrue(output.isClosed());
@@ -101,7 +105,7 @@ public class TestNonWritingResponse {
         // when
         nonWritingResponse.setContentLength(1);
         nonWritingResponse.setContentLength(2);
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
 
         // then
         verify(response).setContentLength(2);
@@ -110,7 +114,8 @@ public class TestNonWritingResponse {
     @Test
     public void test_not_setting_content_length() throws IOException {
         // when
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
+        nonWritingResponse.finallyClose(output);
 
         // then
         verifyNoMoreInteractions(response);
@@ -121,7 +126,7 @@ public class TestNonWritingResponse {
         // when
         nonWritingResponse.getWriter().write("a");
         response.getOutputStream().write(bytes("b"));
-        nonWritingResponse.finallyWriteAndClose(output);
+        nonWritingResponse.finallyWrite(output);
 
         // then
         assertEquals("ba", output.toString());

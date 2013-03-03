@@ -17,16 +17,19 @@
 package org.jboss.arquillian.warp.impl.server.execution;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.jboss.arquillian.core.api.annotation.ApplicationScoped;
 import org.jboss.arquillian.core.spi.Manager;
@@ -36,6 +39,7 @@ import org.jboss.arquillian.test.spi.event.suite.BeforeSuite;
 import org.jboss.arquillian.warp.impl.server.delegation.RequestDelegationService;
 import org.jboss.arquillian.warp.impl.server.delegation.RequestDelegator;
 import org.jboss.arquillian.warp.impl.server.event.ProcessHttpRequest;
+import org.jboss.arquillian.warp.spi.WarpCommons;
 import org.jboss.arquillian.warp.spi.context.RequestScoped;
 import org.jboss.arquillian.warp.spi.event.AfterRequest;
 import org.jboss.arquillian.warp.spi.event.BeforeRequest;
@@ -108,7 +112,7 @@ public class WarpFilter implements Filter {
      */
     private void doFilterWarp(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws IOException, ServletException {
-
+        NonWritingResponse responseWrapper = new NonWritingResponse(response);
         try {
             ManagerBuilder builder = ManagerBuilder.from().extension(Class.forName(DEFAULT_EXTENSION_CLASS));
             Manager manager = builder.create();
@@ -118,21 +122,30 @@ public class WarpFilter implements Filter {
             manager.bind(ApplicationScoped.class, Manager.class, manager);
 
             manager.fire(new BeforeSuite());
-            manager.fire(new BeforeRequest(request, response));
+            manager.fire(new BeforeRequest(request, responseWrapper));
 
             manager.bind(RequestScoped.class, ServletRequest.class, request);
-            manager.bind(RequestScoped.class, ServletResponse.class, response);
+            manager.bind(RequestScoped.class, ServletResponse.class, responseWrapper);
             manager.bind(RequestScoped.class, HttpServletRequest.class, request);
-            manager.bind(RequestScoped.class, HttpServletResponse.class, response);
+            manager.bind(RequestScoped.class, HttpServletResponse.class, responseWrapper);
             manager.bind(RequestScoped.class, FilterChain.class, filterChain);
 
             try {
                 manager.fire(new ProcessHttpRequest());
             } finally {
-                manager.fire(new AfterRequest(request, response));
+                manager.fire(new AfterRequest(request, responseWrapper));
                 manager.fire(new AfterSuite());
 
                 manager.shutdown();
+                // Write response headers
+                for (String header : responseWrapper.getHeaderNames()) {
+                    for (String value : responseWrapper.getHeaders().get(header)) {
+                        response.addHeader(header, value);
+                    }
+                }
+                response.setStatus(responseWrapper.getStatus());
+                responseWrapper.finallyWrite(response.getOutputStream());
+                responseWrapper.finallyClose(response.getOutputStream());
             }
 
         } catch (ClassNotFoundException e) {

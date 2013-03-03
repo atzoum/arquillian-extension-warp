@@ -91,6 +91,6 @@ public class DefaultHttpResponseEnricher implements HttpResponseEnricher {
         servletOutputStream.write(enrichment.getBytes());
 
         // finalize
-        nonWritingResponse.finallyWriteAndClose(servletOutputStream);
+        nonWritingResponse.finallyWrite(servletOutputStream);
     }
 }
