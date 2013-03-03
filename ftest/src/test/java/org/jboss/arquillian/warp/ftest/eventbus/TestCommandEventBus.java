@@ -155,13 +155,14 @@ public class TestCommandEventBus {
             }
         });
 
-        try {
-            Thread.sleep(500);  // give time for the command to execute
-        } catch (InterruptedException e) {
-            fail("thread interrupted");
-        }
+        // get the last command from receiver
+        DummyCommand lastCommand = DummyCommandReceiver.lastCommand;
+        assertNotNull("Received Command should not be null (race condition?)", lastCommand);
+        assertNotNull("response can't be null", lastCommand.getResult());
+        assertNull("thowable must be null", lastCommand.getThrowable());
+        DummyCommandReceiver.lastCommand = null;
 
-        // Get the previous command execution result
+        // Get the previous command execution result from server
         ArquillianLifecycleCommandInspection inspection = Warp.initiate(
                 new Activity() {
                     public void perform() {
@@ -189,13 +190,11 @@ public class TestCommandEventBus {
                 DummyCommandSender.SENDER_ENABLED = true;
             }
         });
-
-        try {
-            Thread.sleep(500);  // give time for the command to execute
-        } catch (InterruptedException e) {
-            fail("thread interrupted");
-        }
-
+        // get the last command from receiver
+        lastCommand = DummyCommandReceiver.lastCommand;
+        assertNotNull("Received Command should not be null (race condition?)", lastCommand);
+        assertNull("response must be null", lastCommand.getResult());
+        assertNotNull("thowable can't be null", lastCommand.getThrowable());
         // Get the previous command execution result
         inspection = Warp.initiate(
                 new Activity() {

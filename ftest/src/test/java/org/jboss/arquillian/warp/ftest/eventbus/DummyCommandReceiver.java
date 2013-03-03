@@ -25,8 +25,10 @@ import org.jboss.arquillian.core.api.annotation.Observes;
  */
 public class DummyCommandReceiver {
     static boolean fail = false;
-    public void receiveCommand(@Observes DummyCommand commandEvent) {
+    static DummyCommand lastCommand;
 
+    public void receiveCommand(@Observes DummyCommand commandEvent) {
+        lastCommand = commandEvent;
         if (fail) {
             commandEvent.setThrowable(new RuntimeException("Expected Failure of commandEvent"));
         } else {

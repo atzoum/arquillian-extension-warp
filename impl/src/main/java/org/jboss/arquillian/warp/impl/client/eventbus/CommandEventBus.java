@@ -84,6 +84,7 @@ public class CommandEventBus {
     private Instance<TestContext> testContextInst;
 
     private static Timer eventBusTimer;
+    private static boolean timerStarted;
 
     /**
      * Starts the Event Bus.
@@ -139,8 +140,10 @@ public class CommandEventBus {
         };
 
         // Start Timer
-        if (eventBusTimer != null)
+        if (eventBusTimer != null) {
             eventBusTimer.cancel();
+            timerStarted = false;
+        }
 
         try {
             eventBusTimer = new Timer();
@@ -149,6 +152,7 @@ public class CommandEventBus {
                 public void run() {
                     try {
                         Object o = execute(eventUrl, Object.class, null);
+                        timerStarted = true;
                         if (o != null) {
                             if (o instanceof Command) {
                                 Command<?> command = (Command<?>) o;
@@ -171,10 +175,11 @@ public class CommandEventBus {
                     + testClass.getName() + " "
                     + event.getTestMethod(), e);
         }
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
+        while (!timerStarted) {
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException ie) {
+            }
         }
     }
 
